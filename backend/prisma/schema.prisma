@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  phone         String?
+  password_hash String
+  address       String?
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  orders        Order[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Brand {
+  id                  String    @id @default(uuid())
+  brand_name          String
+  discount_percentage Float     @default(0.0)
+  createdAt           DateTime  @default(now())
+  products            Product[]
+}
+
+model Product {
+  id             String            @id @default(uuid())
+  name           String
+  brand_id       String
+  brand          Brand             @relation(fields: [brand_id], references: [id], onDelete: Cascade)
+  description    String
+  gst_percentage Float             @default(18.0)
+  createdAt      DateTime          @default(now())
+  images         String[]
+  quantities     ProductQuantity[]
+  orderItems     OrderItem[]
+}
+
+model ProductQuantity {
+  id         String  @id @default(uuid())
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  quantity   String  // '500ml', '1L', '4L', '10L', '20L'
+  base_price Float
+  stock      Int     @default(0)
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  user_id         String
+  user            User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  total_amount    Float
+  gst_amount      Float
+  discount_amount Float
+  final_amount    Float
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  orderItems      OrderItem[]
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+}
+
+model OrderItem {
+  id                String  @id @default(uuid())
+  order_id          String
+  order             Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id        String
+  product           Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  quantity_selected String
+  price             Float
+  qty               Int     @default(1)
+}
